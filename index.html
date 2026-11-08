@@ -1,0 +1,1091 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>노래방 7번 룸 튜토리얼</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: 단계 칩 + 한 장의 무대. 무대 안에는 노래방 일러스트(SVG)나 유리 패널이 한 번에 하나만 뜬다 */
+:root {
+  color-scheme: dark;
+  --ground: #120c15;
+  --ink: rgba(255,255,255,.96);
+  --ink-2: rgba(255,255,255,.66);
+  --ink-3: rgba(255,255,255,.4);
+  --glass: rgba(92,70,112,.46);
+  --glass-edge: rgba(255,255,255,.36);
+  --chip: rgba(255,255,255,.13);
+  --sign: #FFD815;
+  --blood: #c4352b;
+  --good: #7cc58f;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 28px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+/* 상단 단계 칩 */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.case { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.case small { font-size: 12px; letter-spacing: .06em; color: var(--ink-3); }
+.case b { font-size: 17px; font-weight: 600; }
+.steps { display: flex; gap: 6px; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; }
+.steps li { font-size: 12.5px; padding: 6px 11px; border-radius: 999px; background: var(--chip); color: var(--ink-3); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.steps li .n { font-variant-numeric: tabular-nums; opacity: .8; }
+.steps li.done { color: var(--ink-2); }
+.steps li.done .n::before { content: "✓ "; color: var(--good); }
+.steps li.now { background: var(--ink); color: #1a1220; font-weight: 600; }
+.steps li.locked::after { content: ""; width: 7px; height: 9px; border: 1.5px solid currentColor; border-radius: 2px; opacity: .6; }
+
+/* 무대 */
+.stage { position: relative; width: 100%; border-radius: 28px; overflow: hidden; background: #1a1220; aspect-ratio: 16 / 9; box-shadow: 0 0 0 1px rgba(255,255,255,.08); }
+.frame { position: absolute; inset: 0; }
+.frame > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; user-select: none; -webkit-user-select: none; }
+.frame svg text { font-family: var(--font); }
+
+/* 유리 요소 */
+.glass { background: var(--glass); -webkit-backdrop-filter: blur(28px) saturate(1.35); backdrop-filter: blur(28px) saturate(1.35); border: 1px solid var(--glass-edge); }
+.tooltip { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); border-radius: 999px; padding: 10px 22px; font-size: 16px; font-weight: 500; max-width: calc(100% - 32px); text-align: center; text-wrap: balance; pointer-events: none; }
+.tooltip .count { color: var(--ink-2); margin-left: 6px; font-variant-numeric: tabular-nums; }
+.toast { position: absolute; left: 50%; bottom: 22px; transform: translate(-50%, 8px); opacity: 0; border-radius: 999px; padding: 9px 18px; font-size: 14.5px; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100% - 32px); text-align: center; text-wrap: balance; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.card { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); width: min(720px, calc(100% - 32px)); border-radius: 40px; padding: 26px 32px; display: flex; align-items: center; gap: 28px; animation: rise .35s ease-out; }
+.card .txt { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+.card h2 { margin: 0; font-size: 21px; font-weight: 600; text-wrap: balance; }
+.card p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--ink-2); }
+.card .why { color: var(--ink); }
+@keyframes rise { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+.btn { font: inherit; font-size: 15.5px; font-weight: 600; border: 0; cursor: pointer; border-radius: 999px; padding: 14px 26px; white-space: nowrap; background: #fff; color: #1a1220; transition: transform .12s, opacity .2s; }
+.btn:hover { transform: translateY(-1px); }
+.btn:focus-visible { outline: 3px solid var(--sign); outline-offset: 3px; }
+.btn.quiet { background: rgba(255,255,255,.16); color: var(--ink); }
+.btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+
+/* SVG 안의 누를 수 있는 것 */
+[data-hit], [data-decoy] { cursor: pointer; }
+[data-hit]:focus, [data-decoy]:focus { outline: none; }
+.ring .halo { fill: none; stroke: rgba(255,255,255,.85); stroke-width: 10; }
+.ring .core { fill: none; stroke: #17111d; stroke-width: 3.5; }
+.ring.on-dark .halo { stroke: rgba(255,255,255,.28); stroke-width: 14; }
+.ring.on-dark .core { stroke: #fff; }
+.ring { transform-box: fill-box; transform-origin: center; animation: ring 1.6s ease-in-out infinite; }
+@keyframes ring { 0%,100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+.hinting .ring .core { stroke: #ff9500; }
+.hinting .ring { animation-duration: .8s; }
+[data-hit]:focus-visible .ring .core { stroke: #ff9500; }
+[data-hit].hit .ring { animation: none; }
+[data-hit].hit .ring .core { stroke: #2f9e57; }
+
+.sbox { fill: rgba(255,255,255,.001); stroke: rgba(28,20,40,.78); stroke-width: 2.5; transition: stroke .2s, fill .2s; }
+[data-hit]:hover .sbox, [data-decoy]:hover .sbox { stroke: #4a3bd8; }
+[data-hit]:focus-visible .sbox { stroke: #ff9500; stroke-width: 4; }
+.hinting [data-hit]:not(.hit) .sbox { stroke: #ff9500; stroke-width: 4.5; animation: blink .8s ease-in-out infinite; }
+@keyframes blink { 50% { stroke-opacity: .35; } }
+[data-hit].hit .sbox { stroke: #2f9e57; stroke-width: 4; fill: rgba(47,158,87,.14); }
+.check { opacity: 0; }
+[data-hit].hit .check { opacity: 1; }
+[data-decoy].nope .sbox { animation: nope .5s; }
+@keyframes nope { 0%,100% { stroke: rgba(28,20,40,.78); } 20%,60% { stroke: #e0352b; stroke-width: 4.5; } }
+
+.sel { fill: rgba(86,64,230,.12); stroke: #3b2fd1; stroke-width: 3; }
+.guide { opacity: 0; transition: opacity .4s; pointer-events: none; }
+.guide.show { opacity: 1; }
+.guide rect.g { fill: none; stroke: #ff9500; stroke-width: 4; stroke-dasharray: 14 10; animation: march 1s linear infinite; }
+@keyframes march { to { stroke-dashoffset: -24; } }
+.range-area, .draw-area { cursor: crosshair; touch-action: none; }
+
+/* 끌어서 붙이는 스티커 */
+.drag { cursor: grab; transform-box: view-box; transform-origin: 0 0; touch-action: none; }
+.drag.dragging { cursor: grabbing; }
+.drag.settle { transition: transform .35s cubic-bezier(.3,.7,.3,1); }
+.drag:focus { outline: none; }
+.drag:focus-visible .ring .core { stroke: #ff9500; }
+.drag.placed { cursor: default; }
+.drag.placed .ring { display: none; }
+.bx.good.hit .sbox { stroke: #2f9e57; stroke-width: 4; fill: rgba(47,158,87,.14); }
+.hinting .bx.good:not(.hit) .sbox { stroke: #ff9500; stroke-width: 4.5; animation: blink .8s ease-in-out infinite; }
+.bx.nope .sbox { animation: nope .5s; }
+.fit { fill: none; stroke: #3b2fd1; stroke-width: 4; }
+.mres { opacity: 0; transition: opacity .4s; }
+.mres.on { opacity: 1; }
+
+.draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1s ease-out forwards; animation-delay: var(--d, 0s); }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.later { opacity: 0; transition: opacity .5s; }
+.revealed .later { opacity: 1; }
+.measure { opacity: 0; }
+.revealed .measure { animation: fadeIn .5s ease-out both; animation-delay: var(--d, 0s); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 전체 화면 패널 (BPA 소개, 브리핑, 보고서) */
+.panel-bg { position: absolute; inset: 0; background: url('img/room.webp') center / cover no-repeat; filter: blur(10px) brightness(.4) saturate(1.1); transform: scale(1.08); }
+.stage.has-panel { aspect-ratio: auto; min-height: 600px; }
+.panel { position: relative; display: grid; place-items: center; padding: 40px 24px; min-height: 600px; }
+.sheet { width: min(780px, 100%); border-radius: 40px; padding: 32px 36px; display: flex; flex-direction: column; gap: 18px; animation: fade .4s ease-out; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--ink-3); }
+.sheet h1 { margin: 0; font-size: 30px; font-weight: 700; line-height: 1.25; text-wrap: balance; }
+.sheet p { margin: 0; font-size: 15.5px; line-height: 1.6; color: var(--ink-2); max-width: 62ch; }
+.sheet p b { color: var(--ink); font-weight: 600; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.fact { background: rgba(255,255,255,.08); border-radius: 18px; padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fact small { font-size: 12px; color: var(--ink-3); }
+.fact b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+.row { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
+.diagram { background: rgba(0,0,0,.22); border-radius: 22px; padding: 10px 6px 4px; }
+.diagram svg { width: 100%; height: auto; display: block; }
+.diagram text { font-family: var(--font); }
+
+/* 브리핑: 인물 + 말풍선 */
+.talk { width: min(1000px, 100%); display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.25fr); gap: 28px; align-items: end; animation: fade .4s ease-out; }
+.figure { position: relative; display: flex; justify-content: center; }
+.figure svg { width: 100%; max-width: 340px; height: auto; display: block; }
+.say { display: flex; flex-direction: column; gap: 14px; padding-bottom: 28px; }
+.who { align-self: flex-start; font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 999px; background: rgba(255,255,255,.14); }
+.who small { font-weight: 400; color: var(--ink-2); margin-left: 6px; }
+.bubble { position: relative; border-radius: 34px; padding: 26px 30px; min-height: 140px; display: flex; flex-direction: column; gap: 12px; }
+.bubble::before { content: ""; position: absolute; left: -11px; bottom: 34px; width: 22px; height: 22px; transform: rotate(45deg); background: inherit; border-left: 1px solid var(--glass-edge); border-bottom: 1px solid var(--glass-edge); -webkit-backdrop-filter: inherit; backdrop-filter: inherit; }
+.line { font-size: 20px; line-height: 1.55; margin: 0; text-wrap: pretty; animation: fade .35s ease-out; }
+.line em { font-style: normal; color: var(--sign); }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.25); }
+.dots i.on { background: #fff; }
+.mission { border-radius: 22px; padding: 14px 18px; background: rgba(255,216,21,.12); border: 1px solid rgba(255,216,21,.35); font-size: 15px; line-height: 1.55; animation: fade .4s ease-out; }
+
+/* 보고서 */
+.report { display: flex; flex-direction: column; gap: 14px; }
+.field { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; align-items: start; }
+.field > span { font-size: 13.5px; color: var(--ink-3); padding-top: 9px; }
+.auto { background: rgba(255,255,255,.07); border-radius: 14px; padding: 9px 12px; font-size: 14.5px; }
+.auto::after { content: "자동 입력"; margin-left: 8px; font-size: 11px; color: var(--ink-3); }
+.choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.choice { font: inherit; font-size: 14.5px; cursor: pointer; border-radius: 999px; padding: 9px 16px; background: rgba(255,255,255,.1); color: var(--ink); border: 1px solid transparent; }
+.choice[aria-pressed="true"] { background: #fff; color: #1a1220; font-weight: 600; }
+.choice:focus-visible { outline: 3px solid var(--sign); outline-offset: 2px; }
+.mine { color: var(--sign); font-size: 11.5px; letter-spacing: .04em; }
+
+/* 재연 */
+.stage.has-replay { aspect-ratio: auto; background: #140c18; display: flex; flex-direction: column; align-items: center; padding-bottom: 22px; }
+.replay { position: relative; width: 100%; height: clamp(260px, 40vw, 470px); }
+.replay svg { width: 100%; height: 100%; display: block; }
+.replay text { font-family: var(--font); }
+.verdict { position: relative; margin-top: -40px; width: min(760px, calc(100% - 32px)); border-radius: 40px; padding: 26px 30px; display: flex; flex-direction: column; gap: 12px; opacity: 0; transition: opacity .6s; }
+.verdict.show { opacity: 1; }
+.verdict h2 { margin: 0; font-size: 22px; }
+.verdict ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+.verdict li { font-size: 13.5px; border-radius: 999px; padding: 6px 12px; background: rgba(255,255,255,.1); }
+.verdict li.ok::before { content: "✓ "; color: var(--good); }
+.verdict li.no::before { content: "✗ "; color: #ff8a7a; }
+#arm { transform-origin: 404px 214px; transform-box: view-box; }
+.play #arm { animation: swing 1.1s cubic-bezier(.5,0,.2,1) .6s both; }
+@keyframes swing { 0% { transform: rotate(-150deg); } 70% { transform: rotate(10deg); } 100% { transform: rotate(4deg); } }
+.drop { opacity: 0; }
+.play .drop { animation: fly .55s ease-out both; animation-delay: calc(1.35s + var(--d)); }
+@keyframes fly { 0% { opacity: 1; transform: translate(0,0); } 100% { opacity: 1; transform: translate(var(--dx), var(--dy)); } }
+.stain { opacity: 0; }
+.play .stain { animation: fadeIn .2s both; animation-delay: calc(1.85s + var(--d)); }
+.origin-mark { opacity: 0; }
+.play .origin-mark { animation: fadeIn .5s 2.6s both; }
+
+.note { font-size: 12.5px; color: var(--ink-3); line-height: 1.55; margin: 0; }
+
+@media (max-width: 760px) {
+  .stage { aspect-ratio: auto; }
+  .stage.scene .frame { position: relative; aspect-ratio: 16 / 9; }
+  .stage.scene .tooltip { position: relative; left: auto; top: auto; transform: none; margin: 12px; max-width: none; border-radius: 22px; font-size: 14.5px; padding: 10px 14px; }
+  .toast { bottom: 10px; font-size: 13px; padding: 7px 12px; }
+  .stage .card, .stage .verdict { position: relative; left: auto; bottom: auto; transform: none; width: auto; margin: 12px; border-radius: 28px; flex-direction: column; align-items: stretch; gap: 16px; padding: 22px; animation: none; }
+  .verdict { margin-top: 0; opacity: 1; }
+  .stage.has-panel, .panel { min-height: 0; }
+  .panel { padding: 16px 12px; }
+  .facts { grid-template-columns: 1fr; }
+  .field { grid-template-columns: 1fr; gap: 6px; }
+  .field > span { padding-top: 0; }
+  .sheet { padding: 24px 20px; border-radius: 28px; }
+  .sheet h1 { font-size: 23px; }
+  .talk { grid-template-columns: 1fr; gap: 6px; }
+  .figure svg { max-width: 170px; }
+  .say { padding-bottom: 0; }
+  .bubble { padding: 20px 22px; border-radius: 26px; min-height: 0; }
+  .bubble::before { left: 50%; top: -11px; bottom: auto; margin-left: -11px; border-left: 1px solid var(--glass-edge); border-top: 1px solid var(--glass-edge); border-bottom: 0; }
+  .line { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ring, .card, .sheet, .talk, .line, .guide rect.g { animation: none !important; }
+  .draw { animation-duration: .01s !important; animation-delay: 0s !important; }
+  .play #arm, .play .drop, .play .stain, .play .origin-mark { animation-duration: .01s !important; animation-delay: 0s !important; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="case">
+      <small>사건 파일 1107 · 튜토리얼 프로토타입</small>
+      <b>노래방 7번 룸 사건</b>
+    </div>
+    <ol class="steps" id="steps" aria-label="진행 단계"></ol>
+  </header>
+  <main class="stage" id="stage" aria-live="polite"></main>
+  <p class="note">노래방 장면은 팀이 공유한 무드 이미지(보라 벨벳 소파, 검은 대리석)를 참고해 그린 임시 일러스트예요. 방 전체가 어두우면 피가 묻혀 안 보여서, 피가 튄 벽만 밝은 대리석 패널로 바꿨어요. 한 단계에 한 가지만 할 수 있고, 다른 곳을 누르면 안내가 떠요.</p>
+</div>
+
+<script>
+/* ---------- 혈흔 데이터 (벽 확대 장면, 1600×900 좌표) ---------- */
+const C = { x: 760, y: 600 };                 // 줄이 모이는 점 (벽 위)
+const BLOOD = '#76101a';
+const rad = d => d * Math.PI / 180;
+const tailDir = a => Math.atan2(Math.cos(rad(a)), -Math.sin(rad(a))) * 180 / Math.PI; // 꼬리가 바깥을 보도록 회전
+
+const MAIN = [
+  { id: 'g1', r: 445, a: -115, t: 'good', L: 46, alpha: 34 },
+  { id: 'g2', r: 345, a: -58,  t: 'good', L: 42, alpha: 41 },
+  { id: 'g3', r: 234, a: -162, t: 'good', L: 38, alpha: 52 },
+  { r: 300, a: -90,  t: 'small', L: 12 },
+  { r: 390, a: -80,  t: 'small', L: 10 },
+  { r: 262, a: -128, t: 'overlap', L: 28 },
+  { r: 185, a: -38,  t: 'round', L: 20 },
+  { r: 420, a: -40,  t: 'small', L: 11 },
+  { r: 205, a: -100, t: 'small', L: 9 },
+  { r: 150, a: -142, t: 'small', L: 10 },
+  { r: 340, a: -148, t: 'small', L: 12 },
+  { r: 275, a: -14,  t: 'overlap', L: 24 },
+  { r: 120, a: -72,  t: 'round', L: 15 },
+  { r: 470, a: -70,  t: 'small', L: 12 },
+  { r: 230, a: -62,  t: 'small', L: 10 }
+].map((s, i) => ({
+  ...s, id: s.id || 'm' + i,
+  x: C.x + s.r * Math.cos(rad(s.a)), y: C.y + s.r * Math.sin(rad(s.a)),
+  phi: tailDir(s.a),
+  W: s.t === 'good' ? s.L * Math.sin(rad(s.alpha)) : s.t === 'round' ? s.L : s.L * .6
+}));
+
+// 흉기를 휘두를 때 떨어진 다른 무리 (오른쪽 위 호)
+const CAST = Array.from({ length: 8 }, (_, k) => {
+  const a = -158 + k * 8, cx = 1520, cy = 430, R = 310;
+  return { id: 'c' + k, t: 'small', L: 13 - (k % 3) * 2, x: cx + R * Math.cos(rad(a)), y: cy + R * Math.sin(rad(a)), phi: a + 180, W: 6 };
+});
+
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const MIST = Array.from({ length: 56 }, () => {
+  const r = 70 + rnd() * 430, a = -176 + rnd() * 172;
+  return { x: C.x + r * Math.cos(rad(a)), y: C.y + r * Math.sin(rad(a)), s: .9 + rnd() * 1.6 };
+}).filter(p => p.y < 760);
+
+const BBOX = (() => {
+  const xs = MAIN.flatMap(s => [s.x - s.L * .7, s.x + s.L * .7]), ys = MAIN.flatMap(s => [s.y - s.L * .7, s.y + s.L * .7]);
+  return { x: Math.min(...xs), y: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) };
+})();
+
+function drop(s, fill = BLOOD) {
+  const { x, y, L, W, phi, t } = s;
+  if (t === 'round') return `<circle cx="${x}" cy="${y}" r="${L / 2}" fill="${fill}"/>`;
+  let body = `<ellipse rx="${W / 2}" ry="${L / 2}" fill="${fill}"/>` +
+    `<path d="M ${-W * .24} ${-L * .3} Q 0 ${-L * 1.1} ${W * .24} ${-L * .3} Z" fill="${fill}"/>`;
+  if (t === 'good') body += `<circle cx="0" cy="${-L * 1.05}" r="${Math.max(1.6, W * .1)}" fill="${fill}"/>`;
+  if (t === 'overlap') body += `<g transform="translate(${W * .55} ${L * .18}) rotate(32)"><ellipse rx="${W * .5}" ry="${L * .42}" fill="${fill}"/><path d="M ${-W * .2} ${-L * .28} Q 0 ${-L * .9} ${W * .2} ${-L * .28} Z" fill="${fill}"/></g>`;
+  return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${phi.toFixed(1)})">${body}</g>`;
+}
+
+function stainBox(s) {
+  const half = s.t === 'round' ? s.L / 2 + 10 : s.L * .72 + (s.t === 'overlap' ? 14 : 9);
+  const off = s.t === 'round' ? 0 : s.L * .18;
+  const cx = s.x + Math.sin(rad(s.phi)) * off, cy = s.y - Math.cos(rad(s.phi)) * off;
+  return { x: cx - half, y: cy - half, w: half * 2, h: half * 2 };
+}
+
+const ring = (cx, cy, r, dark = false) =>
+  `<g class="ring ${dark ? 'on-dark' : ''}"><circle class="halo" cx="${cx}" cy="${cy}" r="${r}"/><circle class="core" cx="${cx}" cy="${cy}" r="${r}"/></g>`;
+
+/* ---------- 벽 확대 배경 ---------- */
+function wallSVG(inner, label, extraAttrs = '') {
+  const buttons = Array.from({ length: 23 }, (_, k) => `<circle cx="${40 + k * 70}" cy="836" r="4" fill="#2a1040"/><circle cx="${75 + k * 70}" cy="872" r="4" fill="#2a1040"/>`).join('');
+  return `<svg viewBox="0 0 1600 900" role="img" aria-label="${label}" ${extraAttrs}>
+    <defs>
+      <linearGradient id="mw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6dfd7"/><stop offset="1" stop-color="#bdb3ab"/></linearGradient>
+      <radialGradient id="warm" cx=".5" cy="0" r="1"><stop offset="0" stop-color="#ffd8a8" stop-opacity=".35"/><stop offset=".7" stop-color="#ffd8a8" stop-opacity="0"/></radialGradient>
+      <linearGradient id="vel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6c3594"/><stop offset="1" stop-color="#36154e"/></linearGradient>
+      <radialGradient id="edge" cx=".5" cy=".45" r=".75"><stop offset=".6" stop-color="#140c18" stop-opacity="0"/><stop offset="1" stop-color="#140c18" stop-opacity=".55"/></radialGradient>
+    </defs>
+    <rect width="1600" height="900" fill="url(#mw)"/>
+    <g fill="none" stroke="#8b827b" stroke-linecap="round">
+      <path d="M -20 150 C 300 90, 520 270, 820 215 S 1300 120, 1640 270" stroke-width="2.6" stroke-opacity=".26"/>
+      <path d="M 180 900 C 380 640, 640 720, 740 520 S 1100 380, 1500 -20" stroke-width="1.4" stroke-opacity=".2"/>
+      <path d="M 1100 900 C 1160 700, 1300 640, 1640 600" stroke-width="2" stroke-opacity=".2"/>
+      <path d="M -20 540 C 200 480, 330 570, 520 470" stroke-width="1.3" stroke-opacity=".18"/>
+      <path d="M 980 -10 C 1020 120, 1200 160, 1260 330" stroke-width="1.2" stroke-opacity=".16"/>
+    </g>
+    <rect width="1600" height="900" fill="url(#warm)"/>
+    <rect x="0" y="0" width="44" height="900" fill="#1c1222"/><rect x="44" y="0" width="5" height="900" fill="#b08f55"/>
+    <rect x="1556" y="0" width="44" height="900" fill="#1c1222"/><rect x="1551" y="0" width="5" height="900" fill="#b08f55"/>
+    <path d="M 0 900 L 0 815 Q 0 788 34 788 L 1566 788 Q 1600 788 1600 815 L 1600 900 Z" fill="url(#vel)"/>
+    <path d="M 0 792 L 1600 792" stroke="#8c55b8" stroke-opacity=".5" stroke-width="3"/>
+    ${buttons}
+    <rect width="1600" height="900" fill="url(#edge)" pointer-events="none"/>
+    <text x="74" y="770" font-size="20" fill="#5b5249" fill-opacity=".8">소파 등받이</text>
+    ${inner}
+  </svg>`;
+}
+const allStains = (dimExcept) => {
+  const mist = MIST.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${p.s.toFixed(2)}" fill="${BLOOD}"/>`).join('');
+  const main = MAIN.map(s => drop(s)).join('');
+  const cast = CAST.map(s => drop(s)).join('');
+  return `<g ${dimExcept ? 'opacity=".28"' : ''}>${mist}${main}${cast}</g>`;
+};
+
+/* ---------- 노래방 전체 장면 ---------- */
+function roomSVG() {
+  // 왼쪽 벽: 위 y = 170x/420, 아래 y = 900 - 340x/420 (오른쪽은 좌우 반전)
+  const top = x => 170 * x / 420, bot = x => 900 - 340 * x / 420;
+  const sidePanel = (x0, x1, flip, fill) => {
+    const h0 = bot(x0) - top(x0), h1 = bot(x1) - top(x1);
+    const pts = [[x0, top(x0) + h0 * .1], [x1, top(x1) + h1 * .1], [x1, top(x1) + h1 * .5], [x0, top(x0) + h0 * .5]]
+      .map(([x, y]) => `${flip ? 1600 - x : x},${y.toFixed(1)}`).join(' ');
+    return `<polygon points="${pts}" fill="${fill}" stroke="#a5844c" stroke-width="2.5"/>`;
+  };
+  const leftPanels = [[30, 120], [150, 240], [265, 345], [365, 410]].map(([a, b]) => sidePanel(a, b, false, 'url(#mirror)')).join('');
+  const rightPanels = [[30, 120], [150, 240], [265, 345], [365, 410]].map(([a, b]) => sidePanel(a, b, true, 'url(#bronze)')).join('');
+  const candles = Array.from({ length: 9 }, (_, k) => {
+    const i = k - 4, x = 800 + i * 34, y = 118 + Math.abs(i) * 4;
+    return `<rect x="${x - 2.5}" y="${y - 18}" width="5" height="18" fill="#f3eadb"/><circle cx="${x}" cy="${y - 23}" r="4.5" fill="#ffd27a"/>`;
+  }).join('');
+  const crystals = Array.from({ length: 13 }, (_, k) => {
+    const x = 736 + k * 10.7;
+    return `<line x1="${x}" y1="${130 + Math.abs(k - 6) * 2}" x2="${x}" y2="${148 + (6 - Math.abs(k - 6)) * 4}" stroke="#fff3d6" stroke-opacity=".7" stroke-width="2"/>`;
+  }).join('');
+  const tufts = (y0, n) => Array.from({ length: n }, (_, k) => `<circle cx="${452 + k * 38}" cy="${y0}" r="3" fill="#2a1040"/>`).join('');
+  // 오른쪽 대리석 패널에 튄 피 (사람 머리는 1060,405 근처)
+  let sd = 5; const r2 = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const spatter = Array.from({ length: 34 }, () => {
+    const a = -172 + r2() * 164, r = 18 + r2() * 150, L = 3 + r2() * 9;
+    const x = 1062 + r * Math.cos(rad(a)), y = 405 + r * Math.sin(rad(a));
+    if (x < 992 || x > 1150 || y < 205 || y > 432) return '';
+    return drop({ x, y, L, W: L * .62, phi: tailDir(a), t: L > 9 ? 'good' : 'small' }, '#7a0f18');
+  }).join('');
+  return `<svg viewBox="0 0 1600 900" role="img" aria-label="보라색 벨벳 소파와 검은 대리석 테이블이 있는 노래방 7번 룸. 오른쪽 밝은 대리석 벽에 피가 튀어 있다">
+    <defs>
+      <linearGradient id="ceil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1023"/><stop offset="1" stop-color="#0d0812"/></linearGradient>
+      <linearGradient id="back" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#25182e"/><stop offset="1" stop-color="#160e1c"/></linearGradient>
+      <linearGradient id="lw" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0f0913"/><stop offset="1" stop-color="#1f1427"/></linearGradient>
+      <linearGradient id="rw" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#0f0913"/><stop offset="1" stop-color="#1f1427"/></linearGradient>
+      <linearGradient id="mirror" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f2438"/><stop offset=".45" stop-color="#4a3b57"/><stop offset=".55" stop-color="#2b2033"/><stop offset="1" stop-color="#1d1524"/></linearGradient>
+      <linearGradient id="bronze" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a3a33"/><stop offset="1" stop-color="#2a201e"/></linearGradient>
+      <linearGradient id="mw2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8e1d9"/><stop offset="1" stop-color="#b2a8a0"/></linearGradient>
+      <linearGradient id="vel2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b3393"/><stop offset="1" stop-color="#3a1752"/></linearGradient>
+      <linearGradient id="vel3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#57297a"/><stop offset="1" stop-color="#2e1243"/></linearGradient>
+      <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0e0a11"/><stop offset="1" stop-color="#050307"/></linearGradient>
+      <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9e6ea"/><stop offset="1" stop-color="#8e8992"/></linearGradient>
+      <radialGradient id="chand" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".5"/><stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient>
+      <radialGradient id="lamp" cx=".5" cy="0" r="1"><stop offset="0" stop-color="#ffdcb0" stop-opacity=".55"/><stop offset=".8" stop-color="#ffdcb0" stop-opacity="0"/></radialGradient>
+      <radialGradient id="vig" cx=".5" cy=".5" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".6"/></radialGradient>
+      <radialGradient id="disco" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#f4f2f6"/><stop offset="1" stop-color="#5d5864"/></radialGradient>
+      <filter id="blur8" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>
+      <clipPath id="rp"><rect x="985" y="195" width="170" height="335"/></clipPath>
+      <clipPath id="lp"><rect x="445" y="195" width="170" height="335"/></clipPath>
+    </defs>
+    <rect width="1600" height="900" fill="#0b070d"/>
+    <polygon points="0,0 1600,0 1180,170 420,170" fill="url(#ceil)"/>
+    <polygon points="160,0 1440,0 1110,140 490,140" fill="#0f0915"/>
+    <g stroke="#c486ff" fill="none">
+      <polyline points="160,0 490,140 1110,140 1440,0" stroke-width="16" stroke-opacity=".5" filter="url(#blur8)"/>
+      <polyline points="160,0 490,140 1110,140 1440,0" stroke-width="3"/>
+      <line x1="420" y1="170" x2="1180" y2="170" stroke-width="10" stroke-opacity=".35" filter="url(#blur8)"/>
+    </g>
+    <polygon points="0,0 420,170 420,560 0,900" fill="url(#lw)"/>
+    <polygon points="1600,0 1180,170 1180,560 1600,900" fill="url(#rw)"/>
+    ${leftPanels}${rightPanels}
+    <rect x="420" y="170" width="760" height="390" fill="url(#back)"/>
+    <!-- 밝은 대리석 패널 두 장 -->
+    <g clip-path="url(#lp)"><rect x="445" y="195" width="170" height="335" fill="url(#mw2)"/><path d="M 430 260 C 500 230 560 320 640 280 M 450 470 C 520 420 560 480 630 400" stroke="#8b827b" stroke-opacity=".3" stroke-width="2" fill="none"/></g>
+    <g clip-path="url(#rp)"><rect x="985" y="195" width="170" height="335" fill="url(#mw2)"/><path d="M 970 300 C 1030 260 1090 340 1170 290 M 990 480 C 1060 430 1100 500 1170 420" stroke="#8b827b" stroke-opacity=".3" stroke-width="2" fill="none"/></g>
+    <rect x="445" y="195" width="170" height="335" fill="url(#lamp)"/><rect x="985" y="195" width="170" height="335" fill="url(#lamp)"/>
+    <rect x="445" y="195" width="170" height="335" fill="none" stroke="#b08f55" stroke-width="4"/>
+    <rect x="985" y="195" width="170" height="335" fill="none" stroke="#b08f55" stroke-width="4"/>
+    ${spatter}
+    <!-- TV -->
+    <rect x="640" y="222" width="320" height="222" fill="#120c17" stroke="#ffd6aa" stroke-opacity=".5" stroke-width="3"/>
+    <rect x="640" y="222" width="320" height="222" fill="none" stroke="#ffd6aa" stroke-opacity=".25" stroke-width="12" filter="url(#blur8)"/>
+    <rect x="666" y="248" width="268" height="166" fill="#050407" stroke="#2a2030" stroke-width="2"/>
+    <polygon points="666,248 760,248 690,414 666,414" fill="#fff" fill-opacity=".04"/>
+    <g><rect x="624" y="248" width="8" height="28" rx="3" fill="#b08f55"/><circle cx="628" cy="244" r="8" fill="#ffd9a0" filter="url(#blur8)"/></g>
+    <g><rect x="968" y="248" width="8" height="28" rx="3" fill="#b08f55"/><circle cx="972" cy="244" r="8" fill="#ffd9a0" filter="url(#blur8)"/></g>
+    <!-- 바닥 -->
+    <polygon points="0,900 420,560 1180,560 1600,900" fill="url(#floor)"/>
+    <g stroke="#fff" stroke-opacity=".07" fill="none" stroke-width="1.5">
+      <path d="M 300 900 C 420 760 520 720 640 600"/><path d="M 1250 900 C 1150 780 1080 700 1000 600"/><path d="M 60 820 C 200 760 260 700 380 660"/>
+    </g>
+    <ellipse cx="800" cy="790" rx="260" ry="50" fill="#c486ff" fill-opacity=".07"/>
+    <!-- 뒤쪽 소파 -->
+    <rect x="425" y="440" width="750" height="95" rx="18" fill="url(#vel2)"/>
+    ${tufts(468, 20)}${tufts(506, 20)}
+    <rect x="425" y="522" width="750" height="52" rx="12" fill="url(#vel3)"/>
+    <path d="M 437 526 L 1163 526" stroke="#8c55b8" stroke-opacity=".5" stroke-width="2"/>
+    <ellipse cx="1065" cy="545" rx="44" ry="10" fill="#22061a" fill-opacity=".85"/>
+    <rect x="470" y="470" width="62" height="50" rx="14" fill="url(#silver)" transform="rotate(-8 501 495)"/>
+    <rect x="610" y="476" width="58" height="46" rx="14" fill="url(#silver)" transform="rotate(6 639 499)"/>
+    <rect x="1112" y="482" width="56" height="44" rx="14" fill="url(#silver)" transform="rotate(-38 1140 504)"/>
+    <!-- 옆 소파 -->
+    <polygon points="425,450 425,560 70,900 0,900 0,680" fill="url(#vel2)"/>
+    <polygon points="425,540 485,566 230,900 70,900" fill="url(#vel3)"/>
+    <polygon points="1175,450 1175,560 1530,900 1600,900 1600,680" fill="url(#vel2)"/>
+    <polygon points="1175,540 1115,566 1370,900 1530,900" fill="url(#vel3)"/>
+    <rect x="120" y="690" width="70" height="56" rx="16" fill="url(#silver)" transform="rotate(30 155 718)"/>
+    <!-- 테이블 -->
+    <polygon points="560,636 1040,636 1112,740 488,740" fill="#17111b" stroke="#fff" stroke-opacity=".14" stroke-width="2"/>
+    <path d="M 600 660 C 700 700 760 650 900 720 M 960 650 C 1000 690 1040 680 1080 730" stroke="#fff" stroke-opacity=".1" fill="none" stroke-width="1.5"/>
+    <rect x="488" y="740" width="624" height="46" fill="#0c080f"/>
+    <path d="M 678 612 L 742 612 L 734 668 L 686 668 Z" fill="url(#silver)"/>
+    <ellipse cx="710" cy="612" rx="32" ry="7" fill="#d9d5dc"/>
+    <g fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2"><path d="M 790 650 l 4 34 h 22 l 4 -34"/><path d="M 836 640 l 3 30 h 18 l 3 -30"/><path d="M 600 680 l 4 30 h 20 l 4 -30"/></g>
+    <g transform="rotate(-18 940 700)"><rect x="900" y="694" width="70" height="13" rx="6" fill="#16131a" stroke="#4a4550"/><circle cx="978" cy="700" r="12" fill="url(#silver)"/></g>
+    <!-- 바닥 핏방울 + 병 -->
+    <g fill="#8a1320"><circle cx="1182" cy="806" r="6"/><circle cx="1204" cy="822" r="4.5"/><circle cx="1166" cy="830" r="5"/><circle cx="1222" cy="842" r="3.5"/></g>
+    <g transform="rotate(-62 1300 846)"><rect x="1262" y="834" width="80" height="24" rx="10" fill="#2f6b3b" fill-opacity=".85"/><rect x="1338" y="840" width="34" height="12" rx="4" fill="#2f6b3b" fill-opacity=".85"/></g>
+    <!-- 샹들리에, 미러볼 -->
+    <circle cx="800" cy="120" r="230" fill="url(#chand)"/>
+    <line x1="800" y1="0" x2="800" y2="70" stroke="#b08f55" stroke-width="3"/>
+    <path d="M 664 118 Q 800 170 936 118" stroke="#c9a86a" stroke-width="4" fill="none"/>
+    <path d="M 700 96 Q 800 140 900 96" stroke="#c9a86a" stroke-width="3" fill="none"/>
+    <ellipse cx="800" cy="80" rx="22" ry="12" fill="#c9a86a"/>
+    ${candles}${crystals}
+    <line x1="250" y1="0" x2="250" y2="104" stroke="#888" stroke-width="2"/>
+    <circle cx="250" cy="140" r="36" fill="url(#disco)"/>
+    <g stroke="#2d2933" stroke-opacity=".5" stroke-width="1.2" fill="none"><ellipse cx="250" cy="140" rx="36" ry="12"/><ellipse cx="250" cy="140" rx="36" ry="26"/><ellipse cx="250" cy="140" rx="12" ry="36"/><ellipse cx="250" cy="140" rx="26" ry="36"/></g>
+    <rect width="1600" height="900" fill="url(#vig)" pointer-events="none"/>
+    <!-- 가이드: 실패하면 피가 튄 벽을 점선으로 -->
+    <g class="guide" id="guide">
+      <rect class="g" x="972" y="182" width="196" height="361" rx="20"/>
+      <rect x="930" y="134" width="280" height="38" rx="19" fill="#1b1322" fill-opacity=".9"/>
+      <text x="1070" y="160" text-anchor="middle" font-size="18" fill="#fff">이 벽에 스티커를 붙여 보세요</text>
+    </g>
+    <!-- 구역 스티커 트레이 -->
+    <rect x="36" y="790" width="262" height="86" rx="43" fill="#1b1322" fill-opacity=".9" stroke="#fff" stroke-opacity=".2"/>
+    <text x="74" y="840" font-size="20" fill="#fff">구역 스티커</text>
+    <g class="drag" data-drag="A" data-x="240" data-y="833" role="button" tabindex="0" aria-label="A 구역 스티커. 피가 튄 곳으로 끌어다 붙이세요">
+      ${ring(0, 0, 40, true)}
+      <rect x="-22" y="-26" width="44" height="52" rx="8" fill="#FFD815"/><text x="0" y="9" text-anchor="middle" font-size="26" font-weight="700" fill="#111">A</text>
+    </g>
+  </svg>`;
+}
+
+/* ---------- 측면 단면 (발혈 위치) ---------- */
+const FLOOR = 830, SC = 480, WALLX = 1240;
+const O = { x: WALLX - .30 * SC, y: FLOOR - 1.10 * SC };
+const sideStains = [34, 41, 52].map(al => ({ al, y: FLOOR - (1.10 + .30 / Math.tan(rad(al))) * SC }));
+function sideSVG() {
+  const strings = sideStains.map((s, k) => {
+    const ex = O.x + (O.x - WALLX) * .45, ey = O.y + (O.y - s.y) * .45;
+    return `<line class="draw" pathLength="1" style="--d:${k * .25}s" x1="${WALLX}" y1="${s.y}" x2="${ex}" y2="${ey}" stroke="#ff3b30" stroke-width="3.5" stroke-linecap="round"/>`;
+  }).join('');
+  const ticks = [0.5, 1.0, 1.5].map(m => `<line x1="${WALLX}" y1="${FLOOR - m * SC}" x2="${WALLX + 22}" y2="${FLOOR - m * SC}" stroke="#4b4239" stroke-width="2"/><text x="${WALLX + 30}" y="${FLOOR - m * SC + 7}" font-size="20" fill="#4b4239">${m.toFixed(1)}m</text>`).join('');
+  return `<svg viewBox="0 0 1600 900" role="img" aria-label="노래방 벽과 소파를 옆에서 본 단면. 벽의 혈흔에서 공중으로 뻗은 줄 세 개가 한 점에서 만난다">
+    <defs>
+      <linearGradient id="sw" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e3dcd4"/><stop offset="1" stop-color="#b9afa7"/></linearGradient>
+      <linearGradient id="sv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b3393"/><stop offset="1" stop-color="#36154e"/></linearGradient>
+      <radialGradient id="sg" cx=".3" cy="0" r=".9"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".18"/><stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="1600" height="900" fill="#150d1a"/>
+    <rect width="1600" height="900" fill="url(#sg)"/>
+    <rect x="0" y="${FLOOR}" width="1600" height="${900 - FLOOR}" fill="#09060b"/>
+    <line x1="0" y1="${FLOOR}" x2="1600" y2="${FLOOR}" stroke="#c486ff" stroke-opacity=".35" stroke-width="2"/>
+    <rect x="${WALLX}" y="0" width="${1600 - WALLX}" height="${FLOOR}" fill="url(#sw)"/>
+    ${ticks}
+    <text x="1420" y="760" text-anchor="middle" font-size="22" fill="#5b5249">벽</text>
+    <!-- 소파 옆모습 -->
+    <rect x="940" y="${FLOOR - .45 * SC}" width="${WALLX - 940}" height="${.45 * SC}" rx="20" fill="url(#sv)"/>
+    <rect x="1160" y="${FLOOR - .9 * SC}" width="80" height="${.9 * SC}" rx="22" fill="url(#sv)"/>
+    <text x="1010" y="${FLOOR - 70}" font-size="20" fill="rgba(255,255,255,.55)">소파</text>
+    <!-- 테이블 옆모습 -->
+    <rect x="540" y="${FLOOR - .45 * SC}" width="320" height="26" rx="4" fill="#1d1622" stroke="#fff" stroke-opacity=".15"/>
+    <rect x="580" y="${FLOOR - .45 * SC + 26}" width="240" height="${.45 * SC - 26}" fill="#0f0b12"/>
+    <text x="700" y="${FLOOR - 70}" text-anchor="middle" font-size="20" fill="rgba(255,255,255,.45)">테이블</text>
+    <!-- 앉은 사람 (발견 뒤) -->
+    <g class="later" fill="rgba(255,255,255,.17)">
+      <rect x="1068" y="${O.y + 30}" width="62" height="${FLOOR - .45 * SC - O.y - 10}" rx="26"/>
+      <rect x="950" y="${FLOOR - .45 * SC - 44}" width="170" height="44" rx="20"/>
+      <rect x="950" y="${FLOOR - .45 * SC - 30}" width="40" height="${.45 * SC + 30}" rx="18"/>
+      <circle cx="${O.x}" cy="${O.y}" r="32"/>
+    </g>
+    ${sideStains.map(s => `<ellipse cx="${WALLX + 3}" cy="${s.y}" rx="5" ry="10" fill="${BLOOD}"/>`).join('')}
+    ${strings}
+    <g class="later">
+      <line x1="${O.x}" y1="${O.y}" x2="${WALLX}" y2="${O.y}" stroke="#fff" stroke-dasharray="6 6" stroke-width="2"/>
+      <text x="${(O.x + WALLX) / 2}" y="${O.y + 30}" text-anchor="middle" font-size="22" font-weight="600" fill="#fff">0.30m</text>
+      <line x1="${O.x - 50}" y1="${O.y}" x2="${O.x - 50}" y2="${FLOOR}" stroke="#fff" stroke-dasharray="6 6" stroke-width="2"/>
+      <text x="${O.x - 62}" y="${O.y + 90}" text-anchor="end" font-size="22" font-weight="600" fill="#fff">바닥에서 1.10m</text>
+      <circle cx="900" cy="${FLOOR - 1.6 * SC}" r="28" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2.5" stroke-dasharray="6 6"/>
+      <text x="852" y="${FLOOR - 1.6 * SC + 8}" text-anchor="end" font-size="20" fill="rgba(255,255,255,.65)">서 있었다면 머리 높이 1.6m</text>
+      <circle cx="860" cy="${FLOOR - .45 * SC - 4}" r="22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2.5" stroke-dasharray="6 6"/>
+      <text x="826" y="${FLOOR - .45 * SC - 40}" text-anchor="end" font-size="20" fill="rgba(255,255,255,.65)">넘어져 부딪혔다면 테이블 높이 0.45m</text>
+    </g>
+    <g class="guide" id="guide"><circle cx="${O.x}" cy="${O.y}" r="46" fill="none" stroke="#ff9500" stroke-width="4" stroke-dasharray="12 9"/></g>
+  </svg>`;
+}
+
+/* ---------- 단계 ---------- */
+const GOOD = MAIN.filter(s => s.t === 'good');
+const MSG = {
+  small: '너무 작아서 모양이 잘 안 보여요. 더 크고 꼬리가 또렷한 혈흔에 붙여 보세요.',
+  round: '거의 동그래서 어느 쪽에서 날아왔는지 알기 어려워요. 다른 혈흔에 붙여 보세요.',
+  overlap: '두 방울이 겹쳐서 모양이 흐려졌어요. 다른 혈흔에 붙여 보세요.'
+};
+const ARROW = `<path d="M 0 -15 L 11 1 L 3.5 1 L 3.5 14 L -3.5 14 L -3.5 1 L -11 1 Z" fill="#3b2fd1"/>`;
+// 충돌각 단계: 대표 혈흔 3개를 7배로 키워 나란히
+const ZOOM = GOOD.map((g, i) => ({
+  i, cx: [310, 800, 1290][i], cy: 400, L: g.L * 7, W: g.W * 7, alpha: g.alpha,
+  mmL: (g.L / 10).toFixed(1), mmW: (g.W / 10).toFixed(1)
+}));
+let taken = new Set();
+
+const STEPS = [
+  { key: 'intro', label: 'BPA란?', panel: true },
+  { key: 'brief', label: '사건 브리핑', panel: true },
+  {
+    key: 'observe', label: '현장 관찰', need: 1,
+    tip: '피가 가장 많이 튄 곳에 노란 구역 스티커를 끌어다 붙이세요',
+    hint: '점선으로 표시한 벽에 스티커를 끌어다 놓아 보세요',
+    build: roomSVG,
+    drop: (id, p) => {
+      if (p.x >= 955 && p.x <= 1185 && p.y >= 170 && p.y <= 555) return { ok: true, at: { x: 1136, y: 232 } };
+      if (p.x >= 1110 && p.x <= 1290 && p.y >= 750 && p.y <= 880) return { msg: '여기는 흘러 떨어진 핏방울이에요. 피가 더 넓게 튄 곳을 찾아보세요.' };
+      if (p.x >= 430 && p.x <= 630 && p.y >= 180 && p.y <= 545) return { msg: '이 벽에는 피가 없어요. 반대쪽 벽을 살펴보세요.' };
+      return { msg: '피가 많이 튄 곳 위에 붙여 보세요.' };
+    },
+    auto: () => ({ x: 1070, y: 320 }),
+    done: { title: 'A 구역으로 표시했어요', msg: '소파 뒤 밝은 대리석 벽에 피가 넓게 튀어 있어요.', why: '현장 전체를 먼저 훑어보고 구역을 나눠야 어디부터 분석할지 정할 수 있어요.' }
+  },
+  {
+    key: 'range', label: '범위 지정', range: true,
+    tip: '한데 모여 튄 피를 핀치한 채 끌어서 네모로 감싸세요',
+    build: () => wallSVG(`${allStains()}
+      <g class="guide" id="guide"><rect class="g" x="${BBOX.x - 26}" y="${BBOX.y - 26}" width="${BBOX.x2 - BBOX.x + 52}" height="${BBOX.y2 - BBOX.y + 52}" rx="18"/>
+        <rect x="${BBOX.x - 26}" y="${BBOX.y2 + 38}" width="290" height="40" rx="20" fill="#1b1322" fill-opacity=".85"/>
+        <text x="${BBOX.x - 26 + 145}" y="${BBOX.y2 + 65}" text-anchor="middle" font-size="19" fill="#fff">이 점선을 따라 그려 보세요</text></g>
+      <rect class="sel" id="sel" x="0" y="0" width="0" height="0" rx="14" visibility="hidden"/>`, 'A 구역 벽 확대. 피가 많이 모인 무리와 오른쪽 위의 다른 무리가 있다', 'class="range-area"'),
+    done: { title: 'A-1 그룹으로 묶었어요', msg: `한 번에 튄 피 ${MAIN.length}개가 한 그룹이 됐어요. 오른쪽 위 피는 흉기를 휘두를 때 떨어진 다른 무리라 뺐어요.`, why: '같은 순간에 튄 피끼리 묶어야 그 순간에 무슨 일이 있었는지 볼 수 있어요.' }
+  },
+  {
+    key: 'stains', label: '대표 혈흔', need: 3,
+    tip: '크고 꼬리가 또렷한 혈흔 3개에 방향 스티커를 끌어다 붙이세요',
+    hint: '주황색으로 깜빡이는 혈흔에 붙여 보세요',
+    build: () => {
+      const boxes = MAIN.map(s => {
+        const b = stainBox(s);
+        return `<g class="bx ${s.t === 'good' ? 'good' : ''}" data-box="${s.id}"><rect class="sbox" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="5"/></g>`;
+      }).join('');
+      const g = { x: BBOX.x - 22, y: BBOX.y - 22, w: BBOX.x2 - BBOX.x + 44, h: BBOX.y2 - BBOX.y + 44 };
+      const stickers = [0, 1, 2].map(k => `<g class="drag" data-drag="d${k}" data-x="${1336 + k * 66}" data-y="842" role="button" tabindex="0" aria-label="방향 스티커 ${k + 1}">
+          ${ring(0, 0, 32, true)}<circle r="26" fill="#fff" stroke="#3b2fd1" stroke-width="3"/><g class="arr">${ARROW}</g></g>`).join('');
+      return wallSVG(`${allStains()}
+        <rect x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="18" fill="none" stroke="#3b2fd1" stroke-width="3"/>
+        <rect x="${g.x}" y="${g.y + g.h + 12}" width="200" height="38" rx="19" fill="#3b2fd1"/>
+        <text x="${g.x + 100}" y="${g.y + g.h + 38}" text-anchor="middle" font-size="18" font-weight="600" fill="#fff">A-1 그룹 · ${MAIN.length}개</text>
+        ${boxes}
+        <rect x="1130" y="798" width="420" height="88" rx="44" fill="#1b1322" fill-opacity=".9" stroke="#fff" stroke-opacity=".2"/>
+        <text x="1166" y="849" font-size="20" fill="#fff">방향 스티커</text>
+        ${stickers}`, 'A-1 그룹의 혈흔마다 네모가 표시된 벽과 방향 스티커 3개');
+    },
+    drop: (id, p) => {
+      const near = MAIN.map(m => ({ m, b: stainBox(m) }))
+        .filter(({ b }) => p.x >= b.x - 18 && p.x <= b.x + b.w + 18 && p.y >= b.y - 18 && p.y <= b.y + b.h + 18)
+        .sort((a, c) => Math.hypot(p.x - a.m.x, p.y - a.m.y) - Math.hypot(p.x - c.m.x, p.y - c.m.y))[0];
+      if (!near) return { msg: '네모로 표시된 혈흔 위에 끌어다 붙여 보세요.' };
+      const { m, b } = near;
+      if (m.t !== 'good') {
+        const bx = document.querySelector(`[data-box="${m.id}"]`);
+        bx?.classList.remove('nope'); void bx?.getBBox(); bx?.classList.add('nope');
+        return { msg: MSG[m.t] };
+      }
+      if (taken.has(m.id)) return { msg: '이미 스티커를 붙인 혈흔이에요. 다른 혈흔을 골라 보세요.' };
+      taken.add(m.id);
+      document.querySelector(`[data-box="${m.id}"]`)?.classList.add('hit');
+      return { ok: true, at: { x: b.x + b.w + 10, y: b.y - 10 }, rot: m.phi };
+    },
+    auto: () => { const m = GOOD.find(g => !taken.has(g.id)); return { x: m.x, y: m.y }; },
+    onMiss: () => $stage.classList.add('hinting'),
+    onHint: () => {},
+    done: { title: '방향 스티커 3개를 붙였어요', msg: '스티커 화살표는 꼬리 쪽, 즉 피가 날아간 방향을 가리켜요. 크고 꼬리가 또렷한 피일수록 방향과 각도를 정확히 잴 수 있어요.', why: '작은 점 수십 개 대신 또렷한 몇 개만 대표로 분석해요.' }
+  },
+  {
+    key: 'angle', label: '충돌각', need: 3, ellipse: true, wait: 900,
+    tip: '대표 혈흔마다 끌어서 동그라미를 그려 몸통에 맞추세요',
+    hint: '주황 점선을 따라 동그라미를 그려 보세요',
+    onHint: () => ZOOM.forEach(z => { if (!hits.has('e' + z.i)) showGuide('gE' + z.i); }),
+    build: () => wallSVG(`
+      <g id="formula" class="mres"><rect x="1180" y="92" width="350" height="96" rx="24" fill="#1b1322" fill-opacity=".9"/>
+        <text x="1210" y="134" font-size="22" fill="#fff">sin α = 폭 ÷ 길이</text>
+        <text x="1210" y="166" font-size="17" fill="rgba(255,255,255,.6)">길쭉할수록 비스듬히 부딪힌 피</text></g>
+      ${ZOOM.map(z => `
+        <text x="${z.cx}" y="${z.cy + z.L / 2 + 40}" text-anchor="middle" font-size="20" fill="#5b5249">대표 혈흔 ${z.i + 1} · ×7</text>
+        <g transform="translate(${z.cx} ${z.cy})"><ellipse rx="${z.W / 2}" ry="${z.L / 2}" fill="${BLOOD}"/><path d="M ${-z.W * .22} ${-z.L * .32} Q 0 ${-z.L * .9} ${z.W * .22} ${-z.L * .32} Z" fill="${BLOOD}"/></g>
+        <g class="guide" id="gE${z.i}"><ellipse cx="${z.cx}" cy="${z.cy}" rx="${z.W / 2 + 12}" ry="${z.L / 2 + 12}" fill="none" stroke="#ff9500" stroke-width="4" stroke-dasharray="14 10"/></g>
+        <ellipse class="fit" id="fE${z.i}" cx="${z.cx}" cy="${z.cy}" rx="${z.W / 2}" ry="${z.L / 2}" visibility="hidden"/>
+        <g class="mres" id="mr${z.i}">
+          <line x1="${z.cx + z.W / 2 + 26}" y1="${z.cy - z.L / 2}" x2="${z.cx + z.W / 2 + 26}" y2="${z.cy + z.L / 2}" stroke="#3b2fd1" stroke-width="3"/>
+          <line x1="${z.cx - z.W / 2}" y1="${z.cy}" x2="${z.cx + z.W / 2}" y2="${z.cy}" stroke="#fff" stroke-width="3"/>
+          <rect x="${z.cx - 100}" y="${z.cy + z.L / 2 + 58}" width="200" height="68" rx="22" fill="#1b1322" fill-opacity=".92"/>
+          <text x="${z.cx}" y="${z.cy + z.L / 2 + 92}" text-anchor="middle" font-size="28" font-weight="700" fill="#fff">α ≈ ${z.alpha}°</text>
+          <text x="${z.cx}" y="${z.cy + z.L / 2 + 116}" text-anchor="middle" font-size="15" fill="rgba(255,255,255,.6)">폭 ${z.mmW} ÷ 길이 ${z.mmL}mm</text>
+        </g>`).join('')}
+      <ellipse class="sel" id="dE" cx="0" cy="0" rx="0" ry="0" visibility="hidden"/>`, '대표 혈흔 세 개를 7배로 키워 나란히 놓은 벽', 'class="draw-area"'),
+    done: { title: '충돌각 34° · 41° · 52°', msg: '피는 비스듬히 부딪힐수록 길쭉해져요. 동그라미로 잰 폭과 길이의 비율로 날아온 각도를 계산했어요.', why: '각도를 재는 이유는 이 피가 어디서 튀어 왔는지, 그 시작점을 찾기 위해서예요.' }
+  },
+  {
+    key: 'string', label: '줄 연결', need: 1, point: { x: C.x, y: C.y, tol: 70 },
+    tip: '혈흔마다 날아온 방향으로 줄을 그었어요. 줄이 모이는 점을 눌러 보세요',
+    hint: '줄 세 개가 만나는 점을 눌러 보세요',
+    miss: '거기는 아니에요. 빨간 줄 세 개가 한곳에서 만나는 점을 찾아보세요.',
+    build: () => {
+      const lines = GOOD.map((s, k) => {
+        const ex = C.x + (C.x - s.x) * .18, ey = C.y + (C.y - s.y) * .18;
+        return `<line class="draw" pathLength="1" style="--d:${k * .3}s" x1="${s.x}" y1="${s.y}" x2="${ex}" y2="${ey}" stroke="#e0241b" stroke-width="3.5" stroke-linecap="round"/>`;
+      }).join('');
+      return wallSVG(`${allStains(true)}${GOOD.map(s => drop(s)).join('')}${GOOD.map(s => { const b = stainBox(s); return `<rect class="sbox" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="5" style="stroke:#2f9e57;stroke-width:4"/>`; }).join('')}
+        ${lines}
+        <g class="guide" id="guide"><circle cx="${C.x}" cy="${C.y}" r="50" fill="none" stroke="#ff9500" stroke-width="4" stroke-dasharray="12 9"/></g>`, '대표 혈흔 세 개에서 그은 빨간 줄이 벽 위의 한 점으로 모인다');
+    },
+    done: { title: '줄이 한 점에서 만났어요', msg: '혈흔마다 꼬리 반대쪽으로 줄을 그으면 벽 위의 한 점으로 모여요.', why: '이 점은 피가 튀어 나온 곳을 벽에 비춘 위치예요. 이제 벽에서 얼마나 떨어졌는지 찾을 차례예요.' }
+  },
+  {
+    key: 'origin', label: '발혈 위치', need: 1, point: { x: O.x, y: O.y, tol: 60 },
+    tip: '옆에서 본 모습이에요. 충돌각대로 공중에 뻗은 줄이 만나는 곳을 눌러 보세요',
+    hint: '빨간 줄 세 개가 만나는 곳을 눌러 보세요',
+    miss: '거기는 아니에요. 공중으로 뻗은 빨간 줄들이 만나는 곳을 찾아보세요.',
+    build: sideSVG,
+    onHit: (svg) => { svg.classList.add('revealed'); return 1400; },
+    done: { title: '피가 튄 곳을 찾았어요', msg: '벽에서 0.30m, 바닥에서 1.10m. 소파에 앉은 사람의 머리 높이예요.', why: '친구 말처럼 넘어지다 테이블에 부딪혔다면 이 점은 0.45m 근처여야 해요.' }
+  },
+  { key: 'report', label: '사건 보고서', panel: true },
+  { key: 'replay', label: '재연', panel: true }
+];
+
+const ANSWERS = {
+  weapon: { q: '흉기', options: ['둔기 (병, 마이크 등)', '날카로운 흉기'], correct: 0 },
+  posture: { q: '피해자 자세', options: ['서 있었다', '소파에 앉아 있었다', '넘어지는 중이었다'], correct: 1 },
+  statement: { q: '친구의 진술', options: ['사실이다', '거짓이다'], correct: 1 }
+};
+
+/* ---------- 진행 ---------- */
+const $stage = document.getElementById('stage');
+const $steps = document.getElementById('steps');
+let current = 0, hits = new Set(), solved = false, hintTimer = null, toastTimer = null;
+const picks = {};
+
+function renderSteps() {
+  $steps.innerHTML = STEPS.map((s, i) => {
+    const cls = i < current ? 'done' : i === current ? 'now' : 'locked';
+    return `<li class="${cls}" ${i === current ? 'aria-current="step"' : ''}><span class="n">${i + 1}</span>${s.label}</li>`;
+  }).join('');
+}
+
+function go(i) {
+  current = i; hits = new Set(); taken = new Set(); solved = false; clearTimeout(hintTimer);
+  renderSteps();
+  const s = STEPS[i];
+  $stage.className = 'stage';
+  ({ intro: renderIntro, brief: () => renderBrief(0, 0), report: renderReport, replay: renderReplay }[s.key] || renderScene)(s);
+}
+
+function renderScene(s) {
+  $stage.classList.add('scene');
+  $stage.innerHTML = `<div class="frame">${s.build()}<div class="toast glass" id="toast" role="status"></div></div>
+    <div class="tooltip glass" id="tip">${s.tip}${s.need > 1 ? `<span class="count" id="count">0 / ${s.need}</span>` : ''}</div>`;
+  const svg = $stage.querySelector('svg');
+  if (s.range) setupRange(s, svg);
+  if (s.drop) setupDrag(s, svg);
+  if (s.ellipse) setupEllipse(s, svg);
+  hintTimer = setTimeout(() => {
+    if (solved) return;
+    $stage.classList.add('hinting');
+    s.onHint ? s.onHint() : showGuide();
+    if (s.hint) toast(s.hint, 3600);
+  }, s.range ? 8000 : 9000);
+}
+
+function toast(msg, ms = 2600) {
+  const t = document.getElementById('toast'); if (!t) return;
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+const showGuide = (id = 'guide') => document.getElementById(id)?.classList.add('show');
+const hideGuide = (id = 'guide') => document.getElementById(id)?.classList.remove('show');
+const svgPt = (svg, e) => { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
+// 그린 모양이 정답 크기로 맞춰지는 애니메이션
+function tween(el, to, ms = 340) {
+  const from = {}; for (const k in to) from[k] = parseFloat(el.getAttribute(k)) || 0;
+  const t0 = performance.now();
+  const step = now => {
+    const t = Math.min(1, (now - t0) / ms), k2 = 1 - Math.pow(1 - t, 3);
+    for (const k in to) el.setAttribute(k, from[k] + (to[k] - from[k]) * k2);
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function progress(s, key) {
+  hits.add(key);
+  const c = document.getElementById('count'); if (c) c.textContent = `${hits.size} / ${s.need}`;
+  if (hits.size < s.need) return;
+  solved = true; clearTimeout(hintTimer); $stage.classList.remove('hinting');
+  $stage.querySelectorAll('.guide.show').forEach(g => g.classList.remove('show'));
+  const wait = s.onHit ? s.onHit($stage.querySelector('svg')) : (s.wait || 450);
+  setTimeout(() => solve(s), wait);
+}
+
+// 점 누르기 (줄 연결, 발혈 위치): 틀리면 동그라미 가이드
+$stage.addEventListener('click', e => {
+  const s = STEPS[current];
+  if (!s.point || solved) return;
+  if (e.target.closest('.card, .tooltip')) return;
+  const svg = e.target.closest('svg'); if (!svg) return;
+  const p = svgPt(svg, e);
+  if (Math.hypot(p.x - s.point.x, p.y - s.point.y) <= s.point.tol) {
+    hideGuide();
+    svg.insertAdjacentHTML('beforeend', `<circle cx="${s.point.x}" cy="${s.point.y}" r="42" fill="none" stroke="#2f9e57" stroke-width="5"/><circle cx="${s.point.x}" cy="${s.point.y}" r="7" fill="#2f9e57"/>`);
+    progress(s, 'p');
+  } else {
+    toast(s.miss, 3000); showGuide();
+  }
+});
+
+function solve(s) {
+  solved = true; clearTimeout(hintTimer);
+  $stage.classList.remove('hinting');
+  document.getElementById('tip')?.remove();
+  document.getElementById('toast')?.classList.remove('show');
+  const card = document.createElement('div');
+  card.className = 'card glass';
+  card.innerHTML = `<div class="txt"><h2>${s.done.title}</h2><p>${s.done.msg}</p><p class="why">${s.done.why}</p></div>
+    <button class="btn" id="next">다음 단계</button>`;
+  $stage.appendChild(card);
+  const btn = card.querySelector('#next'); btn.focus({ preventScroll: true });
+  btn.addEventListener('click', ev => { ev.stopPropagation(); go(current + 1); });
+}
+
+/* ---------- 스티커 끌어서 붙이기 ---------- */
+function setupDrag(s, svg) {
+  svg.querySelectorAll('[data-drag]').forEach(el => {
+    const home = { x: +el.dataset.x, y: +el.dataset.y };
+    let pos = home, grab = null;
+    const place = (p, settle) => { el.classList.toggle('settle', !!settle); pos = p; el.style.transform = `translate(${p.x}px, ${p.y}px)`; };
+    place(home);
+    const drop = p => {
+      const r = s.drop(el.dataset.drag, p);
+      if (r.ok) {
+        el.classList.add('placed'); el.setAttribute('tabindex', '-1');
+        place(r.at, true);
+        if (r.rot != null) el.querySelector('.arr')?.setAttribute('transform', `rotate(${r.rot.toFixed(1)})`);
+        hideGuide();
+        progress(s, el.dataset.drag);
+      } else {
+        place(home, true); toast(r.msg, 3200);
+        s.onMiss ? s.onMiss() : showGuide();
+      }
+    };
+    el.addEventListener('pointerdown', e => {
+      if (solved || el.classList.contains('placed')) return;
+      e.preventDefault(); e.stopPropagation();
+      el.parentNode.appendChild(el);
+      const p = svgPt(svg, e); grab = { dx: p.x - pos.x, dy: p.y - pos.y };
+      el.setPointerCapture(e.pointerId); el.classList.add('dragging'); el.classList.remove('settle');
+    });
+    el.addEventListener('pointermove', e => { if (grab) { const p = svgPt(svg, e); place({ x: p.x - grab.dx, y: p.y - grab.dy }); } });
+    el.addEventListener('pointerup', () => { if (!grab) return; grab = null; el.classList.remove('dragging'); drop(pos); });
+    el.addEventListener('pointercancel', () => { grab = null; el.classList.remove('dragging'); place(home, true); });
+    el.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && !el.classList.contains('placed') && !solved) { e.preventDefault(); drop(s.auto()); }
+    });
+  });
+}
+
+/* ---------- 범위 지정 (핀치 = 끌어서 네모) ---------- */
+function setupRange(s, svg) {
+  const sel = svg.querySelector('#sel');
+  let start = null, box = null;
+  const draw = (a, b) => {
+    box = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), x2: Math.max(a.x, b.x), y2: Math.max(a.y, b.y) };
+    sel.setAttribute('x', box.x); sel.setAttribute('y', box.y);
+    sel.setAttribute('width', box.x2 - box.x); sel.setAttribute('height', box.y2 - box.y);
+  };
+  svg.addEventListener('pointerdown', e => {
+    if (solved) return;
+    start = svgPt(svg, e); svg.setPointerCapture(e.pointerId);
+    sel.setAttribute('visibility', 'visible'); draw(start, start);
+  });
+  svg.addEventListener('pointermove', e => { if (start && !solved) draw(start, svgPt(svg, e)); });
+  svg.addEventListener('pointerup', () => {
+    if (!start || solved) return; start = null;
+    const w = box.x2 - box.x, h = box.y2 - box.y;
+    if (w < 30 || h < 30) { sel.setAttribute('visibility', 'hidden'); return toast('누른 채로 끌어서 네모를 그려 보세요.'); }
+    const inside = p => p.x >= box.x && p.x <= box.x2 && p.y >= box.y && p.y <= box.y2;
+    const got = MAIN.filter(inside).length, cast = CAST.filter(inside).length;
+    const ratio = (w * h) / ((BBOX.x2 - BBOX.x) * (BBOX.y2 - BBOX.y));
+    let msg = null;
+    if (cast > 0) msg = '오른쪽 위 피는 다른 순간에 튄 무리예요. 빼고 묶어 보세요.';
+    else if (got < MAIN.length - 1) msg = `모인 피 ${MAIN.length}개 중 ${got}개만 들어왔어요. 조금 더 크게 잡아 보세요.`;
+    else if (ratio > 2.6) msg = '범위가 너무 넓어요. 모여 있는 피에 맞게 좁혀 보세요.';
+    if (msg) { sel.setAttribute('visibility', 'hidden'); toast(msg, 3200); setTimeout(() => showGuide(), 400); return; }
+    tween(sel, { x: BBOX.x - 22, y: BBOX.y - 22, width: BBOX.x2 - BBOX.x + 44, height: BBOX.y2 - BBOX.y + 44 });
+    progress({ ...s, need: 1 }, 'r');
+  });
+  svg.addEventListener('pointercancel', () => { start = null; sel.setAttribute('visibility', 'hidden'); });
+}
+
+/* ---------- 대표 혈흔에 동그라미 그리기 ---------- */
+function setupEllipse(s, svg) {
+  const de = svg.querySelector('#dE');
+  let start = null, box = null;
+  const set = (a, b) => {
+    box = { cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, rx: Math.abs(a.x - b.x) / 2, ry: Math.abs(a.y - b.y) / 2 };
+    for (const k in box) de.setAttribute(k, box[k]);
+  };
+  svg.addEventListener('pointerdown', e => {
+    if (solved) return;
+    start = svgPt(svg, e); svg.setPointerCapture(e.pointerId);
+    de.setAttribute('visibility', 'visible'); set(start, start);
+  });
+  svg.addEventListener('pointermove', e => { if (start && !solved) set(start, svgPt(svg, e)); });
+  svg.addEventListener('pointerup', () => {
+    if (!start || solved) return; start = null;
+    const fail = (msg, z) => { de.setAttribute('visibility', 'hidden'); toast(msg, 3200); if (z) showGuide('gE' + z.i); };
+    if (box.rx < 12 || box.ry < 12) return fail('누른 채로 끌어서 혈흔을 감싸는 동그라미를 그려 보세요.');
+    const z = [...ZOOM].sort((a, b) => Math.hypot(box.cx - a.cx, box.cy - a.cy) - Math.hypot(box.cx - b.cx, box.cy - b.cy))[0];
+    if (hits.has('e' + z.i)) return fail('이미 맞춘 혈흔이에요. 다른 혈흔에 그려 보세요.');
+    if (Math.abs(box.cx - z.cx) > z.W * .45 || Math.abs(box.cy - z.cy) > z.L * .35) return fail('혈흔 몸통 위에 동그라미를 그려 보세요.', z);
+    if (box.rx < z.W / 2 * .7 || box.ry < z.L / 2 * .7) return fail('동그라미가 혈흔보다 작아요. 몸통을 다 감싸 보세요.', z);
+    if (box.rx > z.W / 2 * 1.9 || box.ry > z.L / 2 * 1.8) return fail('동그라미가 너무 커요. 혈흔 몸통에 맞춰 보세요.', z);
+    // 성공: 그린 동그라미가 혈흔 몸통 크기로 맞춰진다
+    de.setAttribute('visibility', 'hidden'); hideGuide('gE' + z.i);
+    const fit = svg.querySelector('#fE' + z.i);
+    for (const k in box) fit.setAttribute(k, box[k]);
+    fit.setAttribute('visibility', 'visible');
+    tween(fit, { cx: z.cx, cy: z.cy, rx: z.W / 2, ry: z.L / 2 });
+    setTimeout(() => { svg.querySelector('#mr' + z.i).classList.add('on'); svg.querySelector('#formula').classList.add('on'); }, 300);
+    progress(s, 'e' + z.i);
+  });
+  svg.addEventListener('pointercancel', () => { start = null; de.setAttribute('visibility', 'hidden'); });
+}
+
+/* ---------- 패널: BPA 소개 ---------- */
+function panel(inner) {
+  $stage.classList.add('has-panel');
+  $stage.innerHTML = `<div class="panel-bg"></div><div class="panel">${inner}</div>`;
+}
+
+function renderIntro() {
+  panel(`<section class="sheet glass">
+    <span class="eyebrow">튜토리얼 · 시작하기</span>
+    <h1>혈흔 형태 분석(BPA)이란?</h1>
+    <p>Bloodstain Pattern Analysis. 현장에 남은 <b>피의 모양</b>을 읽어서, 그 순간 무슨 일이 있었는지 거꾸로 알아내는 과학수사 기법이에요.</p>
+    <div class="diagram"><svg viewBox="0 0 680 230" role="img" aria-label="피가 수직으로 떨어지면 둥근 자국, 비스듬히 부딪히면 꼬리 달린 길쭉한 자국이 남는다">
+      <line x1="30" y1="120" x2="310" y2="120" stroke="rgba(255,255,255,.45)" stroke-width="3"/>
+      <line x1="370" y1="120" x2="650" y2="120" stroke="rgba(255,255,255,.45)" stroke-width="3"/>
+      <circle cx="170" cy="34" r="9" fill="#d23a30"/><line x1="170" y1="50" x2="170" y2="104" stroke="#d23a30" stroke-width="3" stroke-dasharray="5 5"/><path d="M 162 98 L 170 112 L 178 98" fill="none" stroke="#d23a30" stroke-width="3"/>
+      <text x="196" y="80" font-size="17" fill="rgba(255,255,255,.7)">90°</text>
+      <circle cx="170" cy="168" r="18" fill="#c4352b"/>
+      <circle cx="420" cy="40" r="9" fill="#d23a30"/><line x1="432" y1="50" x2="496" y2="106" stroke="#d23a30" stroke-width="3" stroke-dasharray="5 5"/><path d="M 484 106 L 502 112 L 496 94" fill="none" stroke="#d23a30" stroke-width="3"/>
+      <path d="M 560 120 A 50 50 0 0 0 548 92" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"/><text x="566" y="104" font-size="17" fill="rgba(255,255,255,.7)">30°</text>
+      <g transform="translate(510 168) rotate(90)"><ellipse rx="13" ry="30" fill="#c4352b"/><path d="M -4 -24 Q 0 -60 4 -24 Z" fill="#c4352b"/></g>
+      <text x="170" y="216" text-anchor="middle" font-size="16" fill="rgba(255,255,255,.75)">똑바로 떨어지면 동그랗게</text>
+      <text x="510" y="216" text-anchor="middle" font-size="16" fill="rgba(255,255,255,.75)">비스듬히 부딪히면 길쭉하게, 꼬리는 날아간 쪽</text>
+    </svg></div>
+    <div class="facts">
+      <div class="fact"><small>어디서</small><b>피가 튀어 나온 위치</b><span>줄을 그어 거꾸로 따라가요</span></div>
+      <div class="fact"><small>무엇으로</small><b>흉기의 종류</b><span>피 방울 크기로 힘을 짐작해요</span></div>
+      <div class="fact"><small>어떻게</small><b>자세와 움직임</b><span>높이로 서 있었는지 앉았는지 봐요</span></div>
+    </div>
+    <div class="row"><button class="btn" id="start">사건 브리핑 듣기</button></div>
+  </section>`);
+  document.getElementById('start').addEventListener('click', () => go(current + 1));
+}
+
+/* ---------- 패널: 사건 브리핑 (형사 → 친구) ---------- */
+const OFFICER = `<svg viewBox="0 0 360 470" aria-hidden="true">
+  <ellipse cx="180" cy="462" rx="150" ry="9" fill="#000" fill-opacity=".35"/>
+  <path d="M 36 470 C 40 366 92 322 180 316 C 268 322 320 366 324 470 Z" fill="#1d2a47"/>
+  <path d="M 148 318 L 180 380 L 212 318 Z" fill="#a9c4e4"/>
+  <path d="M 173 334 L 180 410 L 187 334 Z" fill="#111a30"/>
+  <rect x="58" y="344" width="64" height="12" rx="6" fill="#2d3e66" transform="rotate(-16 90 350)"/>
+  <rect x="238" y="344" width="64" height="12" rx="6" fill="#2d3e66" transform="rotate(16 270 350)"/>
+  <path d="M 236 384 l 12 -8 l 12 8 l -2 16 l -10 7 l -10 -7 z" fill="#e2b84c"/>
+  <rect x="98" y="388" width="48" height="12" rx="3" fill="#d9dde6"/>
+  <rect x="158" y="272" width="44" height="52" rx="18" fill="#e3ad87"/>
+  <ellipse cx="117" cy="214" rx="11" ry="17" fill="#eab892"/><ellipse cx="243" cy="214" rx="11" ry="17" fill="#eab892"/>
+  <ellipse cx="180" cy="210" rx="64" ry="74" fill="#f2c6a1"/>
+  <path d="M 116 186 C 116 160 130 152 140 150 L 120 200 Z M 244 186 C 244 160 230 152 220 150 L 240 200 Z" fill="#2a1d18"/>
+  <path d="M 94 152 C 88 104 140 76 182 78 C 236 78 278 104 270 154 C 230 142 140 142 94 152 Z" fill="#22305a"/>
+  <rect x="108" y="148" width="148" height="24" fill="#0f1628"/>
+  <path d="M 108 170 C 150 198 214 198 256 170 L 254 182 C 214 208 150 208 110 182 Z" fill="#0a0f1d"/>
+  <circle cx="182" cy="122" r="14" fill="#e2b84c"/><circle cx="182" cy="122" r="6" fill="#22305a"/>
+  <path d="M 146 200 L 170 196 M 194 196 L 218 200" stroke="#3a2a20" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="158" cy="218" rx="5" ry="6.5" fill="#2a1d16"/><ellipse cx="206" cy="218" rx="5" ry="6.5" fill="#2a1d16"/>
+  <path d="M 180 222 q -7 18 2 22" stroke="#c98f6b" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 164 256 q 16 5 32 0" stroke="#a4553f" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>`;
+const FRIEND = `<svg viewBox="0 0 360 470" aria-hidden="true">
+  <ellipse cx="180" cy="462" rx="150" ry="9" fill="#000" fill-opacity=".35"/>
+  <path d="M 36 470 C 40 366 92 322 180 316 C 268 322 320 366 324 470 Z" fill="#6d7280"/>
+  <path d="M 108 334 C 118 292 242 292 252 334 C 232 356 128 356 108 334 Z" fill="#585d6a"/>
+  <path d="M 164 350 L 160 418 M 196 350 L 200 418" stroke="#dde0e6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 120 430 Q 180 446 240 430 L 246 470 L 114 470 Z" fill="#5f6471"/>
+  <rect x="158" y="268" width="44" height="52" rx="18" fill="#e3ad87"/>
+  <ellipse cx="117" cy="210" rx="11" ry="17" fill="#eab892"/><ellipse cx="243" cy="210" rx="11" ry="17" fill="#eab892"/>
+  <ellipse cx="180" cy="206" rx="62" ry="72" fill="#f0c19c"/>
+  <path d="M 112 202 C 96 120 146 96 192 100 C 244 96 268 140 250 202 C 244 174 232 152 216 162 C 204 146 182 150 170 164 C 152 150 132 170 126 196 Z" fill="#3b2a22"/>
+  <path d="M 146 192 L 170 184 M 194 184 L 218 192" stroke="#3b2a22" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="168" cy="210" rx="5.5" ry="7" fill="#2a1d16"/><ellipse cx="212" cy="210" rx="5.5" ry="7" fill="#2a1d16"/>
+  <ellipse cx="140" cy="238" rx="16" ry="9" fill="#ff7b7b" fill-opacity=".38"/><ellipse cx="222" cy="238" rx="16" ry="9" fill="#ff7b7b" fill-opacity=".38"/>
+  <path d="M 162 256 q 8 -6 16 0 t 16 0" stroke="#8b4a3a" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M 254 152 q 11 17 0 24 q -11 -7 0 -24 z" fill="#9fd3ff"/>
+</svg>`;
+const BRIEF = [
+  {
+    who: '김 경장', role: '지구대 · 현장 최초 출동', fig: OFFICER, alt: '경찰 제복을 입은 김 경장',
+    lines: [
+      '과학수사대 오셨군요. 저는 지구대 김 경장입니다. 신고를 받고 제일 먼저 출동했어요.',
+      '새벽 <em>2시 14분</em>, 노래방 카운터에서 신고가 들어왔습니다. <em>7번 룸</em>에서 남성이 머리를 다친 채 소파에 쓰러져 있었고, 지금은 병원으로 옮겼어요.',
+      '현장은 그대로 보존해 뒀습니다. 그런데 <em>벽에 피가 꽤 많이 튀어 있어서</em>, 저희가 판단하기 어렵다 싶어 연락드렸어요.'
+    ],
+    next: '함께 있던 친구 진술 듣기'
+  },
+  {
+    who: '친구 박 씨', role: '함께 있던 일행', fig: FRIEND, alt: '후드티를 입고 눈을 피하는 친구',
+    lines: [
+      '저희 둘 다 술을 좀 많이 마셨어요…',
+      '얘가 노래 부르다가 일어났는데, 비틀거리더니 <em>넘어지면서 테이블 모서리에 머리를 쿵 박았어요.</em>',
+      '저는 진짜 아무것도 안 했어요. 그냥 혼자 넘어진 거예요.'
+    ],
+    next: '현장으로 들어가기'
+  }
+];
+function renderBrief(page, line) {
+  const b = BRIEF[page], last = line === b.lines.length - 1;
+  panel(`<div class="talk" ${line === 0 ? '' : 'style="animation:none"'}>
+    <div class="figure" role="img" aria-label="${b.alt}">${b.fig}</div>
+    <div class="say">
+      <span class="eyebrow">사건 브리핑 ${page + 1} / 2</span>
+      <span class="who">${b.who}<small>${b.role}</small></span>
+      <div class="bubble glass">
+        <p class="line">${b.lines[line]}</p>
+        <div class="dots" aria-label="${line + 1} / ${b.lines.length}">${b.lines.map((_, k) => `<i class="${k <= line ? 'on' : ''}"></i>`).join('')}</div>
+      </div>
+      ${page === 0 && last ? `<div class="facts"><div class="fact"><small>장소</small><b>노래방 7번 룸</b></div><div class="fact"><small>신고 시각</small><b>02:14</b></div><div class="fact"><small>함께 있던 사람</small><b>친구 1명</b></div></div>` : ''}
+      ${page === 1 && last ? `<div class="mission">임무: 현장에 남은 피로 <b>이 진술이 사실인지</b> 확인하세요. 도구는 한 단계에 하나씩 열려요.</div>` : ''}
+      <div class="row"><button class="btn" id="talkNext">${last ? b.next : '다음'}</button></div>
+    </div>
+  </div>`);
+  const btn = document.getElementById('talkNext');
+  btn.focus({ preventScroll: true });
+  btn.addEventListener('click', () => {
+    if (!last) return renderBrief(page, line + 1);
+    if (page === 0) return renderBrief(1, 0);
+    go(current + 1);
+  });
+}
+
+/* ---------- 패널: 보고서 ---------- */
+function renderReport() {
+  const field = (key) => {
+    const a = ANSWERS[key];
+    return `<div class="field"><span>${a.q} <span class="mine">직접 선택</span></span>
+      <div class="choices" role="group" aria-label="${a.q}">${a.options.map((o, k) =>
+        `<button class="choice" data-key="${key}" data-k="${k}" aria-pressed="${picks[key] === k}">${o}</button>`).join('')}</div></div>`;
+  };
+  panel(`<section class="sheet glass">
+    <span class="eyebrow">사건 보고서 · A-1 그룹</span>
+    <h1>분석 결과로 보고서를 채웠어요. 마지막 세 칸만 직접 판단하세요</h1>
+    <div class="report">
+      <div class="field"><span>혈흔 형태</span><div class="auto">충격 비산혈흔</div></div>
+      <div class="field"><span>대표 혈흔 충돌각</span><div class="auto">34° · 41° · 52°</div></div>
+      <div class="field"><span>피가 튄 위치</span><div class="auto">벽에서 0.30m, 바닥에서 1.10m</div></div>
+      ${field('weapon')}${field('posture')}${field('statement')}
+    </div>
+    <div class="row"><button class="btn" id="submit" disabled>보고서 제출하고 재연 보기</button></div>
+  </section>`);
+  const submit = document.getElementById('submit');
+  const sync = () => { submit.disabled = Object.keys(ANSWERS).some(k => picks[k] === undefined); };
+  $stage.querySelectorAll('.choice').forEach(b => b.addEventListener('click', () => {
+    picks[b.dataset.key] = +b.dataset.k;
+    $stage.querySelectorAll(`.choice[data-key="${b.dataset.key}"]`).forEach(x => x.setAttribute('aria-pressed', x === b));
+    sync();
+  }));
+  sync();
+  submit.addEventListener('click', () => go(current + 1));
+}
+
+/* ---------- 재연 ---------- */
+function renderReplay() {
+  $stage.classList.add('has-replay');
+  const drops = [0, -40, 30, -70, 60, -15, 12];
+  const right = Object.keys(ANSWERS).filter(k => picks[k] === ANSWERS[k].correct).length;
+  $stage.innerHTML = `
+    <div class="replay"><svg viewBox="0 0 800 450" role="img" aria-label="소파에 앉은 피해자를 친구가 병으로 내려치고 피가 대리석 벽으로 튀는 재연">
+      <defs>
+        <linearGradient id="rv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b3393"/><stop offset="1" stop-color="#36154e"/></linearGradient>
+        <linearGradient id="rm" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e3dcd4"/><stop offset="1" stop-color="#b9afa7"/></linearGradient>
+        <radialGradient id="rc" cx=".35" cy="0" r=".8"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".2"/><stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient>
+      </defs>
+      <rect x="0" y="0" width="800" height="450" fill="#150d1a"/>
+      <rect x="0" y="0" width="800" height="450" fill="url(#rc)"/>
+      <rect x="640" y="0" width="160" height="380" fill="url(#rm)"/>
+      <rect x="0" y="380" width="800" height="70" fill="#09060b"/>
+      <line x1="0" y1="380" x2="800" y2="380" stroke="#c486ff" stroke-opacity=".35"/>
+      <rect x="470" y="268" width="168" height="40" rx="12" fill="url(#rv)"/>
+      <rect x="600" y="196" width="38" height="184" rx="12" fill="url(#rv)"/>
+      <rect x="470" y="300" width="168" height="80" rx="10" fill="#3a1752"/>
+      <rect x="250" y="300" width="150" height="12" rx="3" fill="#1d1622"/><rect x="270" y="312" width="110" height="68" fill="#0f0b12"/>
+      <g fill="rgba(255,255,255,.82)">
+        <circle cx="560" cy="186" r="20"/>
+        <rect x="544" y="208" width="32" height="64" rx="14"/>
+        <rect x="500" y="262" width="66" height="20" rx="10"/>
+        <rect x="496" y="262" width="18" height="78" rx="9"/>
+      </g>
+      <g fill="rgba(255,255,255,.45)">
+        <circle cx="398" cy="150" r="21"/>
+        <rect x="380" y="174" width="38" height="108" rx="16"/>
+        <rect x="382" y="276" width="15" height="104" rx="7"/>
+        <rect x="402" y="276" width="15" height="104" rx="7"/>
+      </g>
+      <g id="arm" fill="rgba(255,255,255,.45)">
+        <rect x="400" y="206" width="104" height="15" rx="7.5"/>
+        <rect x="498" y="196" width="46" height="13" rx="5" fill="#3f8a4f" opacity=".95"/>
+      </g>
+      ${drops.map((dy, k) => `<circle class="drop" cx="568" cy="184" r="${3 + (k % 3)}" fill="#a3161f" style="--dx:${70 + (k % 2) * 2}px;--dy:${dy}px;--d:${k * .04}s"/>`).join('')}
+      ${drops.map((dy, k) => `<ellipse class="stain" cx="${643 + (k % 2)}" cy="${184 + dy}" rx="${3 + (k % 3)}" ry="${6 + (k % 3) * 2}" fill="${BLOOD}" style="--d:${k * .04}s"/>`).join('')}
+      <g class="origin-mark">
+        <circle cx="566" cy="184" r="30" fill="none" stroke="#ff3b30" stroke-width="2" stroke-dasharray="5 5"/>
+        <text x="566" y="132" text-anchor="middle" font-size="14" fill="#fff">당신이 찾은 발혈 위치</text>
+        <line x1="596" y1="184" x2="640" y2="184" stroke="#ff3b30" stroke-dasharray="3 4"/>
+        <text x="618" y="176" text-anchor="middle" font-size="11" fill="rgba(255,255,255,.75)">0.30m</text>
+      </g>
+    </svg></div>
+    <div class="verdict glass" id="verdict">
+      <span class="eyebrow">재연 · 당신의 보고서 ${right} / 3 일치</span>
+      <h2>친구의 진술은 거짓이었습니다</h2>
+      <p style="margin:0;color:var(--ink-2);line-height:1.55;font-size:15px">피해자는 소파에 앉아 있었고, 친구가 위에서 병으로 내려쳤어요. 넘어져 테이블에 부딪혔다면 피는 바닥 가까이에서 튀었을 거예요. 벽에 남은 피가 그것을 알려 줬어요.</p>
+      <ul>${Object.keys(ANSWERS).map(k => {
+        const a = ANSWERS[k], ok = picks[k] === a.correct;
+        return `<li class="${ok ? 'ok' : 'no'}">${a.q}: ${a.options[a.correct]}</li>`;
+      }).join('')}</ul>
+      <div class="row"><button class="btn quiet" id="again">재연 다시 보기</button><button class="btn" id="restart">처음부터</button></div>
+    </div>`;
+  const svg = $stage.querySelector('.replay');
+  const play = () => { svg.classList.remove('play'); void svg.offsetWidth; svg.classList.add('play'); };
+  requestAnimationFrame(play);
+  setTimeout(() => document.getElementById('verdict')?.classList.add('show'), 3200);
+  document.getElementById('again').addEventListener('click', play);
+  document.getElementById('restart').addEventListener('click', () => { for (const k in picks) delete picks[k]; go(0); });
+}
+
+go(0);
+</script>
