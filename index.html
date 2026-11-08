@@ -549,7 +549,7 @@ const DIR_STICKER = `<g transform="scale(.42) translate(-102 -28)">
 // 충돌각 단계: 대표 혈흔 3개를 7배로 키워 나란히
 const ZOOM = GOOD.map((g, i) => ({
   i, cx: [310, 800, 1290][i], cy: 400, L: g.L * 7, W: g.W * 7, alpha: g.alpha,
-  mmL: (g.L / 10).toFixed(1), mmW: (g.W / 10).toFixed(1)
+  cmL: (g.L / 100).toFixed(2), cmW: (g.W / 100).toFixed(2)
 }));
 let taken = new Set();
 
@@ -615,9 +615,10 @@ const STEPS = [
       if (taken.has(m.id)) return { msg: '이미 스티커를 붙인 혈흔이에요. 다른 혈흔을 골라 보세요.' };
       taken.add(m.id);
       document.querySelector(`[data-box="${m.id}"]`)?.classList.add('hit');
-      // 혈흔 바로 앞, 피가 날아간 쪽에 스티커를 붙이고 화살표를 그 방향으로 돌린다
-      const off = m.L * .7 + 46, ux = Math.sin(rad(m.phi)), uy = -Math.cos(rad(m.phi));
-      return { ok: true, at: { x: m.x + ux * off, y: m.y + uy * off }, rot: m.phi - 90 };
+      // 길쭉한 혈흔 옆에 나란히 붙이고, 화살표는 피가 날아간 쪽(꼬리)으로 돌린다
+      const ux = Math.sin(rad(m.phi)), uy = -Math.cos(rad(m.phi));   // 날아간 방향
+      const side = m.W / 2 + 22, along = m.L * .15;                     // 옆으로 비킨 거리, 꼬리 쪽으로 살짝
+      return { ok: true, at: { x: m.x - uy * side + ux * along, y: m.y + ux * side + uy * along }, rot: m.phi - 90 };
     },
     auto: () => { const m = GOOD.find(g => !taken.has(g.id)); return { x: m.x, y: m.y }; },
     onMiss: () => $stage.classList.add('hinting'),
@@ -640,10 +641,16 @@ const STEPS = [
         <ellipse class="fit" id="fE${z.i}" cx="${z.cx}" cy="${z.cy}" rx="${z.W / 2}" ry="${z.L / 2}" visibility="hidden"/>
         <g class="mres" id="mr${z.i}">
           <line x1="${z.cx + z.W / 2 + 26}" y1="${z.cy - z.L / 2}" x2="${z.cx + z.W / 2 + 26}" y2="${z.cy + z.L / 2}" stroke="#3b2fd1" stroke-width="3"/>
+          <line x1="${z.cx + z.W / 2 + 16}" y1="${z.cy - z.L / 2}" x2="${z.cx + z.W / 2 + 36}" y2="${z.cy - z.L / 2}" stroke="#3b2fd1" stroke-width="3"/>
+          <line x1="${z.cx + z.W / 2 + 16}" y1="${z.cy + z.L / 2}" x2="${z.cx + z.W / 2 + 36}" y2="${z.cy + z.L / 2}" stroke="#3b2fd1" stroke-width="3"/>
           <line x1="${z.cx - z.W / 2}" y1="${z.cy}" x2="${z.cx + z.W / 2}" y2="${z.cy}" stroke="#fff" stroke-width="3"/>
+          <text x="${z.cx - z.W / 2 - 12}" y="${z.cy - 6}" text-anchor="end" font-size="15" fill="#5b5249">폭</text>
+          <text x="${z.cx - z.W / 2 - 12}" y="${z.cy + 18}" text-anchor="end" font-size="20" font-weight="700" fill="#3b2fd1">${z.cmW}cm</text>
+          <text x="${z.cx + z.W / 2 + 42}" y="${z.cy - 6}" font-size="15" fill="#5b5249">길이</text>
+          <text x="${z.cx + z.W / 2 + 42}" y="${z.cy + 18}" font-size="20" font-weight="700" fill="#3b2fd1">${z.cmL}cm</text>
           <rect x="${z.cx - 100}" y="${z.cy + z.L / 2 + 58}" width="200" height="68" rx="22" fill="#1b1322" fill-opacity=".92"/>
           <text x="${z.cx}" y="${z.cy + z.L / 2 + 92}" text-anchor="middle" font-size="28" font-weight="700" fill="#fff">α ≈ ${z.alpha}°</text>
-          <text x="${z.cx}" y="${z.cy + z.L / 2 + 116}" text-anchor="middle" font-size="15" fill="rgba(255,255,255,.6)">폭 ${z.mmW} ÷ 길이 ${z.mmL}mm</text>
+          <text x="${z.cx}" y="${z.cy + z.L / 2 + 116}" text-anchor="middle" font-size="15" fill="rgba(255,255,255,.6)">폭 ${z.cmW} ÷ 길이 ${z.cmL}cm</text>
         </g>`).join('')}
       <ellipse class="sel" id="dE" cx="0" cy="0" rx="0" ry="0" visibility="hidden"/>`, '대표 혈흔 세 개를 7배로 키워 나란히 놓은 벽', 'class="draw-area"'),
     done: { title: '충돌각 34° · 41° · 52°', msg: '피는 비스듬히 부딪힐수록 길쭉해져요. 동그라미로 잰 폭과 길이의 비율로 날아온 각도를 계산했어요.', why: '각도를 재는 이유는 이 피가 어디서 튀어 왔는지, 그 시작점을 찾기 위해서예요.' }
