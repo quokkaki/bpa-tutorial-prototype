@@ -539,7 +539,13 @@ const MSG = {
   round: '거의 동그래서 어느 쪽에서 날아왔는지 알기 어려워요. 다른 혈흔에 붙여 보세요.',
   overlap: '두 방울이 겹쳐서 모양이 흐려졌어요. 다른 혈흔에 붙여 보세요.'
 };
-const ARROW = `<path d="M 0 -15 L 11 1 L 3.5 1 L 3.5 14 L -3.5 14 L -3.5 1 L -11 1 Z" fill="#3b2fd1"/>`;
+// 앱 에셋 BloodstainDirectionRulerSticker (204×56, 오른쪽을 가리킴). 검은 부분은 앱처럼 AnalysisBlue로 칠함
+const STICKER_BLUE = '#3480c4';
+const DIR_STICKER = `<g transform="scale(.42) translate(-102 -28)">
+  <path d="M109 35H59V28H109V35Z" fill="white"/><path d="M59 28H9V21H59V28Z" fill="white"/><path d="M159 28H109V21H159V28Z" fill="white"/>
+  <path d="M162.568 0C163.411 3.85448e-05 164.237 0.212929 164.973 0.616211L165.282 0.800781L200.871 23.8008C203.919 25.7707 203.919 30.2293 200.871 32.1992L165.282 55.1992C164.474 55.7218 163.531 56 162.568 56H5C2.23858 56 0 53.7614 0 51V5C0 2.23857 2.23858 6.44256e-08 5 0H162.568ZM5 4C4.44772 4 4 4.44772 4 5V51C4 51.5523 4.44772 52 5 52H162.568L162.712 51.9893C162.806 51.9755 162.899 51.949 162.985 51.9092L163.111 51.8398L198.7 28.8398C199.272 28.4705 199.308 27.6633 198.808 27.2393L198.7 27.1602L163.111 4.16016C162.99 4.08186 162.854 4.03133 162.712 4.01074L162.568 4H5Z" fill-rule="evenodd" clip-rule="evenodd" fill="white"/>
+  <path d="M5 4C4.44772 4 4 4.44772 4 5V51C4 51.5523 4.44772 52 5 52H162.568L162.712 51.9893C162.806 51.9755 162.899 51.949 162.985 51.9092L163.111 51.8398L198.7 28.8398C199.272 28.4705 199.308 27.6633 198.808 27.2393L198.7 27.1602L163.111 4.16016C162.99 4.08186 162.854 4.03133 162.712 4.01074L162.568 4H5ZM109 35H59V28H9V21H59V28H109V21H159V28H109V35Z" fill-rule="evenodd" clip-rule="evenodd" fill="${STICKER_BLUE}"/>
+</g>`;
 // 충돌각 단계: 대표 혈흔 3개를 7배로 키워 나란히
 const ZOOM = GOOD.map((g, i) => ({
   i, cx: [310, 800, 1290][i], cy: 400, L: g.L * 7, W: g.W * 7, alpha: g.alpha,
@@ -584,15 +590,15 @@ const STEPS = [
         return `<g class="bx ${s.t === 'good' ? 'good' : ''}" data-box="${s.id}"><rect class="sbox" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="5"/></g>`;
       }).join('');
       const g = { x: BBOX.x - 22, y: BBOX.y - 22, w: BBOX.x2 - BBOX.x + 44, h: BBOX.y2 - BBOX.y + 44 };
-      const stickers = [0, 1, 2].map(k => `<g class="drag" data-drag="d${k}" data-x="${1336 + k * 66}" data-y="842" role="button" tabindex="0" aria-label="방향 스티커 ${k + 1}">
-          ${ring(0, 0, 32, true)}<circle r="26" fill="#fff" stroke="#3b2fd1" stroke-width="3"/><g class="arr">${ARROW}</g></g>`).join('');
+      const stickers = [0, 1, 2].map(k => `<g class="drag" data-drag="d${k}" data-x="${1272 + k * 96}" data-y="842" role="button" tabindex="0" aria-label="방향 스티커 ${k + 1}">
+          ${ring(0, 0, 48, true)}<rect x="-46" y="-16" width="92" height="32" fill="transparent"/><g class="arr">${DIR_STICKER}</g></g>`).join('');
       return wallSVG(`${allStains()}
         <rect x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="18" fill="none" stroke="#3b2fd1" stroke-width="3"/>
         <rect x="${g.x}" y="${g.y + g.h + 12}" width="200" height="38" rx="19" fill="#3b2fd1"/>
         <text x="${g.x + 100}" y="${g.y + g.h + 38}" text-anchor="middle" font-size="18" font-weight="600" fill="#fff">A-1 그룹 · ${MAIN.length}개</text>
         ${boxes}
-        <rect x="1130" y="798" width="420" height="88" rx="44" fill="#1b1322" fill-opacity=".9" stroke="#fff" stroke-opacity=".2"/>
-        <text x="1166" y="849" font-size="20" fill="#fff">방향 스티커</text>
+        <rect x="1040" y="798" width="510" height="88" rx="44" fill="#1b1322" fill-opacity=".9" stroke="#fff" stroke-opacity=".2"/>
+        <text x="1076" y="849" font-size="20" fill="#fff">방향 스티커</text>
         ${stickers}`, 'A-1 그룹의 혈흔마다 네모가 표시된 벽과 방향 스티커 3개');
     },
     drop: (id, p) => {
@@ -609,7 +615,9 @@ const STEPS = [
       if (taken.has(m.id)) return { msg: '이미 스티커를 붙인 혈흔이에요. 다른 혈흔을 골라 보세요.' };
       taken.add(m.id);
       document.querySelector(`[data-box="${m.id}"]`)?.classList.add('hit');
-      return { ok: true, at: { x: b.x + b.w + 10, y: b.y - 10 }, rot: m.phi };
+      // 혈흔 바로 앞, 피가 날아간 쪽에 스티커를 붙이고 화살표를 그 방향으로 돌린다
+      const off = m.L * .7 + 46, ux = Math.sin(rad(m.phi)), uy = -Math.cos(rad(m.phi));
+      return { ok: true, at: { x: m.x + ux * off, y: m.y + uy * off }, rot: m.phi - 90 };
     },
     auto: () => { const m = GOOD.find(g => !taken.has(g.id)); return { x: m.x, y: m.y }; },
     onMiss: () => $stage.classList.add('hinting'),
